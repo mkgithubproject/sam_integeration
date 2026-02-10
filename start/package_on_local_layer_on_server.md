@@ -1,0 +1,242 @@
+Perfect 👍 — this is a **very sensible beginner choice**.
+
+You want:
+
+* ✅ **AWS SAM**
+* ✅ **Node.js Lambda**
+* ❌ **No Layers for now**
+* ✅ Use **local `package.json`**
+* ✅ Run & test **locally**
+* Later you can move back to layers
+
+This is **100% supported by SAM** and widely used.
+
+I’ll give you **clear, simple, step-by-step instructions**.
+
+---
+
+# 🧠 What we are doing (simple idea)
+
+```
+Local SAM Lambda
+ ├─ Lambda code
+ ├─ package.json (dependencies here)
+ └─ SAM runs it inside Docker
+```
+
+SAM will install dependencies for you during `sam build`.
+
+---
+
+# STEP 1: Create project folder
+
+```powershell
+mkdir sam-node-lambda
+cd sam-node-lambda
+```
+
+Structure:
+
+```
+sam-node-lambda/
+│
+├── src/
+│   └── app.js
+│
+├── events/
+│   └── event.json
+│
+├── package.json
+└── template.yaml
+```
+
+---
+
+# STEP 2: Add Lambda code
+
+### `src/app.js`
+
+```js
+exports.handler = async (event) => {
+  console.log("Lambda running locally with SAM");
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      message: "Hello from SAM (no layers)"
+    })
+  };
+};
+```
+
+---
+
+# STEP 3: Create `package.json`
+
+```powershell
+npm init -y
+```
+
+If your Lambda uses packages, install them:
+
+```powershell
+npm install axios
+```
+
+SAM will pick this up automatically.
+
+---
+
+# STEP 4: Create SAM template (NO layers)
+
+### `template.yaml`
+
+```yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: my-local-lambda
+      Runtime: nodejs18.x
+      Handler: src/app.handler
+      CodeUri: .
+      Timeout: 30
+```
+
+That’s it — no `Layers:` section at all.
+
+---
+
+# STEP 5: Create test event
+
+### `events/event.json`
+
+```json
+{
+  "test": "hello"
+}
+```
+
+---
+
+# STEP 6: Build Lambda (IMPORTANT)
+
+```powershell
+sam build
+```
+
+What SAM does here:
+
+* Reads `package.json`
+* Runs `npm install` **inside Docker**
+* Copies code + dependencies into `.aws-sam/`
+
+---
+
+# STEP 7: Run Lambda locally 🎉
+
+### Direct invoke
+
+```powershell
+sam local invoke MyFunction -e events/event.json
+```
+
+You should see:
+
+* Logs
+* Response JSON
+
+---
+
+# STEP 8: Run as API (optional)
+
+If your Lambda is API-based:
+
+```powershell
+sam local start-api
+```
+
+Then open:
+
+```
+http://localhost:3000
+```
+
+---
+
+# STEP 9: Environment variables (simple SAM way)
+
+Create `env.json`:
+
+```json
+{
+  "MyFunction": {
+    "NODE_ENV": "local"
+  }
+}
+```
+
+Run:
+
+```powershell
+sam local invoke MyFunction --env-vars env.json -e events/event.json
+```
+
+---
+
+# STEP 10: Git-safe setup
+
+### `.gitignore`
+
+```gitignore
+.aws-sam/
+node_modules/
+```
+
+✔ Commit `package.json`
+❌ Don’t commit `node_modules`
+
+---
+
+# 🟢 This setup is PERFECT for beginners
+
+✔ Very easy
+✔ No IAM permission needed
+✔ No layer complexity
+✔ Real Lambda runtime
+✔ Easy to debug
+
+---
+
+# ⚠️ Important note (future)
+
+Your **AWS Lambda in prod uses layers**.
+
+Later, when you’re confident:
+
+* Move dependencies from `package.json` → layer
+* Remove local dependencies
+* Add `Layers:` back to template
+
+No code change needed.
+
+---
+
+## Summary (remember this)
+
+> **SAM + package.json (no layers) = best beginner setup**
+
+You chose the right path 👍
+
+---
+
+If you want next, I can:
+
+* Convert THIS into **layer-based SAM**
+* Show **VS Code debugging**
+* Map **your real AWS Lambda code** into this setup
+
+Just tell me what you want to do next 🚀
